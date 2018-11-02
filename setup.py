@@ -14,7 +14,7 @@ from setuptools import find_packages, setup, Command
 # Package meta-data.
 NAME = 'jupyter_requests'
 DESCRIPTION = 'Send requests to a Jupyter server.'
-URL = ''
+URL = 'https://github.com/Zsailer/jupyter_requests'
 EMAIL = 'zachsailer@gmail.com'
 AUTHOR = 'Zach Sailer'
 REQUIRES_PYTHON = '>=3.6.0'

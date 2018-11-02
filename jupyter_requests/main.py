@@ -12,6 +12,7 @@ def parse_command_line():
     parser.add_argument('verb', help="HTTP request to use.")
     parser.add_argument('endpoint', help="API Endpoint.")
     parser.add_argument('--port', default=8888, type=int, help="Port number.")
+    parser.add_argument('-s', '--server', action='store_true')
     args = parser.parse_args()
     return args
 
@@ -31,7 +32,40 @@ def get_running_notebooks():
     
     # Return Error
     if output.returncode != 0:
-        print(out.stderr)
+        print(output.stderr)
+        return
+    elif output.stdout is None:
+        return 
+
+    text = output.stdout.strip()
+    server_list = text.split('\n')
+
+    # Convert to data
+    data = {}
+    for server in server_list:
+        server = json.loads(server)
+        data[server['port']] = server
+    return data
+
+
+def get_running_servers():
+    """Get running notebook server data. 
+    (Anticipating server/notebook split).
+    
+    Returns
+    -------
+    data : dict
+        Keys are ports and values are server data.
+    """
+    output = subprocess.run(
+        ['jupyter', 'server', 'list', '--json'],
+        capture_output=True,
+        text=True
+    )
+    
+    # Return Error
+    if output.returncode != 0:
+        print(output.stderr)
         return
     elif output.stdout is None:
         return 
@@ -50,11 +84,14 @@ def get_running_notebooks():
 class JupyterRequester(object):
     """
     """
-    def __init__(self, port):
+    def __init__(self, port, server=True):
         # Set the port number
         self.port = port
         # Get servers
-        server_list = get_running_notebooks()
+        if server is True:
+            server_list = get_running_servers()
+        else:
+            server_list = get_running_notebooks()
         server = server_list[self.port]        
         # Get token
         self.token = server['token']
