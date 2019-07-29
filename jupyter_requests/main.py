@@ -12,7 +12,7 @@ def parse_command_line():
     parser.add_argument('verb', help="HTTP request to use.")
     parser.add_argument('endpoint', help="API Endpoint.")
     parser.add_argument('--port', default=8888, type=int, help="Port number.")
-    parser.add_argument('-s', '--server', action='store_true')
+    parser.add_argument('-s', '--server', const=True, default=False, nargs="?")
     args = parser.parse_args()
     return args
 
@@ -82,8 +82,7 @@ def get_running_servers():
 
 
 class JupyterRequester(object):
-    """
-    """
+
     def __init__(self, port, server=True):
         # Set the port number
         self.port = port
@@ -102,8 +101,7 @@ class JupyterRequester(object):
         """Get path."""
         return urllib.parse.urljoin(self.url, endpoint)
 
-    def request(self, verb, endpoint, params={}, *args, **kwargs):
-        """"""
+    def request(self, verb, endpoint, dump=False, params={}, *args, **kwargs):
         # Add api token to params
         params.update({
             'token': self.token
@@ -112,41 +110,39 @@ class JupyterRequester(object):
         method = getattr(requests, verb)
         r = method(self.get_path(endpoint), params=params, *args, **kwargs)
         r.raise_for_status()
-        
-        try:
-            return r.json() 
-        except json.decoder.JSONDecodeError:
-            return None
+        if dump:
+            self.dump(r)
+        return r
 
     def get(self, endpoint, *args, **kwargs):
-        """"""
         return self.request('get', endpoint, *args, **kwargs)
 
     def post(self, endpoint, *args, **kwargs):
-        """"""
         return self.request('post', endpoint, *args, **kwargs)
-
+    
     def put(self, endpoint, *args, **kwargs):
-        """"""
         return self.request('out', endpoint, *args, **kwargs)
-
+  
     def delete(self, endpoint, *args, **kwargs):
-        """"""
         return self.request('delete', endpoint, *args, **kwargs)
 
+    def dump(self, data):
+        try:
+            out = data.json()
+            pprint.pprint(
+                out,
+                indent=2
+            )
+        except json.decoder.JSONDecodeError:
+            print(data.text)
 
 def main():
     """Main call"""
     args = parse_command_line()
-    requester = JupyterRequester(port=args.port)
+    requester = JupyterRequester(port=args.port, server=args.server)
     
     verb = getattr(requester, args.verb)
-    out = verb(args.endpoint)
-
-    pprint.pprint(
-        out,
-        indent=2
-    )
+    verb(args.endpoint, dump=True)
 
 if __name__ == "__main__":
 
